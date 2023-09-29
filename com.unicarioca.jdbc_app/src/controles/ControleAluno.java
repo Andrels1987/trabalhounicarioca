@@ -27,14 +27,7 @@ public class ControleAluno {
             String querySelecet = "SELECT * FROM aluno";
             Statement st = conexao.createStatement();
             ResultSet result = st.executeQuery(querySelecet);
-            int index = 0;
-            while (result.next()) {
-                alunos.add(index,
-                        new Aluno(result.getInt("id_aluno"),
-                                result.getString("nome"),
-                                result.getString("curso"),
-                                result.getInt("professor_id_professor")));
-            }
+            alunos = criarListaDeAlunos(result);
         } catch (Exception e) {
             System.out.println("ERRO : " + e.getMessage());
         }
@@ -42,6 +35,23 @@ public class ControleAluno {
         alunos.sort(Comparator.comparing(Aluno::getNome));
         return alunos;
 
+    }
+     private List<Aluno> criarListaDeAlunos(ResultSet rs) {
+        List<Aluno> alunos = new ArrayList<>();
+        int index = 0;
+        try {
+            while (rs.next()) {
+                alunos.add(index,
+                        new Aluno(rs.getInt("id_aluno"),
+                                rs.getString("nome"),
+                                rs.getString("curso"),
+                                rs.getInt("professor_id_professor")));
+                index++;
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getSQLState());
+        }
+        return alunos;
     }
 
     public void addAlunos() throws IOException, SQLException {
@@ -51,8 +61,7 @@ public class ControleAluno {
         Aluno aluno = new Aluno();
         try (Connection conexao = Dao.getConnection();) {
             do {
-                existe = buscarAlunoPeloNome(br, aluno);
-
+                existe = alunoExiste(br, aluno);
                 if (existe) {
                     System.out.println("Um aluno com esse nome já se encontra no banco");
                     System.out.println("Deseja Tentar novamente? ");
@@ -62,15 +71,19 @@ public class ControleAluno {
                     /// se não existe: adiciona
                     // Busca professor
                     Professor professor = null;
-                    do {
+                     do {
                         System.out.println("Inserir nome do professor");
                         String nomeProfessor = br.readLine();
-                        professor = cp.buscarProfessorPeloNome(nomeProfessor);
-                        if (professor == null) {
+                        List<Professor> professores = cp.buscarProfessorPeloNome(nomeProfessor);
+                        
+                        if (professores.isEmpty()) {
                             System.out.println("Nenhum Professor com esse nome");
-                            System.out.println("");
+                            System.out.println("");                            
+                        }else{
+                            professor = cp.escolherProfessor(professores);
                         }
-                    } while (professor == null);
+                    } while (professor == null); 
+
                     boolean r = inserirAlunoNoBanco(aluno, professor);
                     if (!r) {
                         System.out.println("aluno inserido");
@@ -87,7 +100,6 @@ public class ControleAluno {
         } finally {
             if (br != null) {
                 br.close();
-
             }
         }
 
@@ -107,10 +119,40 @@ public class ControleAluno {
         }
     }
 
-    public Boolean buscarAlunoPeloNome(BufferedReader br, Aluno aluno) {
+    public Aluno buscarAlunoPeloId(int idaluno) {
+        //MUDAR PARA RETORNAR OBJECT ALUNO
+        //CRIAR METODO ALUNOEXISTE
+        
+        ResultSet result = null;
+        Aluno aluno = null;
+        try (Connection conexao = Dao.getConnection()) {
+            String querySelect = "select * from escola.aluno where id_aluno = ? ";
+            PreparedStatement preparedStatement = conexao.prepareStatement(querySelect);
+            preparedStatement.setInt(1, idaluno);
+            result = preparedStatement.executeQuery();
+
+            if (result.next()) {
+                aluno = new Aluno();
+                aluno.setId(result.getInt("id_aluno"));
+                aluno.setNome(result.getString("nome"));
+                aluno.setCurso(result.getString("curso"));
+                aluno.setIdProfessor(result.getInt("professor_id_professor"));                
+            }
+                return aluno;
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+
+        return null;
+    }
+
+    public Boolean alunoExiste(BufferedReader br, Aluno aluno) throws IOException {
+        //MUDAR PARA RETORNAR OBJECT ALUNO
+        //Para testar: comentar a linha abaixo e criar objeto no 
+        //proprio teste
+        inserirInfoAluno(br, aluno);
         ResultSet result = null;
         try (Connection conexao = Dao.getConnection()) {
-            inserirInfoAluno(br, aluno);
             String querySelect = "select * from escola.aluno where nome = ? ";
             PreparedStatement preparedStatement = conexao.prepareStatement(querySelect);
             preparedStatement.setString(1, aluno.getNome().trim());
@@ -122,7 +164,7 @@ public class ControleAluno {
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
-
+        System.out.println("Não existe");
         return false;
     }
 
@@ -143,27 +185,19 @@ public class ControleAluno {
 
     public void deletarAlunoDoBanco() throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        PreparedStatement ps = null;
         Aluno aluno = new Aluno();
         List<Aluno> alunos = new ArrayList<>();
         inserirInfoAluno(br, aluno);
-        PreparedStatement ps = null;
         try (Connection con = Dao.getConnection()) {
             String queString = "Select * from aluno where nome LIKE ? and curso LIKE ?";
             ps = con.prepareStatement(queString);
             ps.setString(1, '%' + aluno.getNome().trim() + '%');
             ps.setString(2, '%' + aluno.getCurso().trim() + '%');
             ResultSet rs = ps.executeQuery();
-            int index = 0;
-            while (rs.next()) {
-                alunos.add(index,
-                        new Aluno(rs.getInt("id_aluno"),
-                                rs.getString("nome"),
-                                rs.getString("curso"),
-                                rs.getInt("professor_id_professor")));
-                index++;
-            }
+            alunos = criarListaDeAlunos(rs);
             System.out.println();
-            if(alunos.isEmpty()) {
+            if (alunos.isEmpty()) {
                 System.out.println("Nenhum aluno encontrado");
                 return;
             }
@@ -173,15 +207,15 @@ public class ControleAluno {
             deletarAluno(ps, con, br);
         } catch (Exception e) {
             System.out.println(e.getMessage());
-        }finally{
+        } finally {
             try {
-                if(ps != null){
+                if (ps != null) {
                     ps.close();
                 }
-                if(br != null){
+                if (br != null) {
                     br.close();
                 }
-                
+
             } catch (Exception e) {
                 System.out.println(e.getMessage());
             }
@@ -201,85 +235,81 @@ public class ControleAluno {
             ps.setString(1, '%' + aluno.getNome().trim() + '%');
             ps.setString(2, '%' + aluno.getCurso().trim() + '%');
             ResultSet rs = ps.executeQuery();
-            int index = 0;
-            while (rs.next()) {
-                alunos.add(index,
-                        new Aluno(rs.getInt("id_aluno"),
-                                rs.getString("nome"),
-                                rs.getString("curso"),
-                                rs.getInt("professor_id_professor")));
-                index++;
-            }
+            alunos = criarListaDeAlunos(rs);
+
             System.out.println();
-            if(alunos.isEmpty()) {
+            if (alunos.isEmpty()) {
                 System.out.println("Nenhum aluno encontrado");
                 return;
             }
             for (Aluno a : alunos) {
                 System.out.printf("%d\t%s\n", a.getId(), a.getNome());
             }
-            atualizarAluno(alunos,ps, con, br);
+            atualizarAluno(alunos, ps, con, br);
         } catch (Exception e) {
             System.out.println(e.getMessage());
-        }finally{
+        } finally {
             try {
-                if(ps != null){
+                if (ps != null) {
                     ps.close();
                 }
-                if(br != null){
+                if (br != null) {
                     br.close();
                 }
-                
+
             } catch (Exception e) {
                 System.out.println(e.getMessage());
             }
         }
 
     }
-    public void deletarAluno(PreparedStatement ps, Connection con, BufferedReader br) throws NumberFormatException, IOException, SQLException{
-        
-            System.out.println("Selecione o ID do aluno a ser deletado - CTRL+C para sair");
-            int escolha = Integer.parseInt(br.readLine());
-            String deleteQuery = "DELETE FROM aluno where id_aluno = ?";
-            ps = con.prepareStatement(deleteQuery);
-            ps.setInt(1, escolha);
-            int resultado = ps.executeUpdate();
-            if(resultado > 0){
-                System.out.println("Aluno deletado");
-            }
+
+   
+
+    public void deletarAluno(PreparedStatement ps, Connection con, BufferedReader br)
+            throws NumberFormatException, IOException, SQLException {
+
+        System.out.println("Selecione o ID do aluno a ser deletado - CTRL+C para sair");
+        int escolha = Integer.parseInt(br.readLine());
+        String deleteQuery = "DELETE FROM aluno where id_aluno = ?";
+        ps = con.prepareStatement(deleteQuery);
+        ps.setInt(1, escolha);
+        int resultado = ps.executeUpdate();
+        if (resultado > 0) {
+            System.out.println("Aluno deletado");
+        }
     }
 
-     public void atualizarAluno(List<Aluno> alunos, PreparedStatement ps, Connection con, BufferedReader br) throws NumberFormatException, IOException, SQLException{
-            Aluno aluno = new Aluno();
-            System.out.println("Selecione o ID do aluno a ser atualizado - CTRL+C para sair");
-            int escolha = Integer.parseInt(br.readLine());
-            for(Aluno al : alunos){
-                if(al.getId() == escolha){
-                    aluno = al;
-                }
+    public void atualizarAluno(List<Aluno> alunos, PreparedStatement ps, Connection con, BufferedReader br)
+            throws NumberFormatException, IOException, SQLException {
+        Aluno aluno = new Aluno();
+        System.out.println("Selecione o ID do aluno a ser atualizado - CTRL+C para sair");
+        int escolha = Integer.parseInt(br.readLine());
+        for (Aluno al : alunos) {
+            if (al.getId() == escolha) {
+                aluno = al;
             }
-            System.out.println("Digite o nome ou enter para pular");
-            String nomeAluno = br.readLine();
-            System.out.println("Digite o curso ou enter para pular");
-            String curso = br.readLine();
-            if(nomeAluno != ""){
-                aluno.setNome(nomeAluno);
-            }
+        }
+        System.out.println("Digite o nome ou enter para pular");
+        String nomeAluno = br.readLine();
+        System.out.println("Digite o curso ou enter para pular");
+        String curso = br.readLine();
+        if (nomeAluno != "") {
+            aluno.setNome(nomeAluno);
+        }
         System.out.println("Aluno ; " + aluno);
-            if(curso != ""){
-                aluno.setCurso(curso);
-            }
-            String updateQuery = "UPDATE aluno SET curso = ?, nome = ? WHERE (id_aluno = ?);";
-            ps = con.prepareStatement(updateQuery);
-            ps.setString(1, aluno.getCurso());
-            ps.setString(2, aluno.getNome());
-            ps.setInt(3, escolha);
-            int resultado = ps.executeUpdate();
-            if(resultado > 0){
-                System.out.println("Aluno atualizado: " + aluno);
-            }
+        if (curso != "") {
+            aluno.setCurso(curso);
+        }
+        String updateQuery = "UPDATE aluno SET curso = ?, nome = ? WHERE (id_aluno = ?);";
+        ps = con.prepareStatement(updateQuery);
+        ps.setString(1, aluno.getCurso());
+        ps.setString(2, aluno.getNome());
+        ps.setInt(3, escolha);
+        int resultado = ps.executeUpdate();
+        if (resultado > 0) {
+            System.out.println("Aluno atualizado: " + aluno);
+        }
     }
 
 }
-
-

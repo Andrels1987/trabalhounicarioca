@@ -9,7 +9,7 @@ import dao.Dao;
 
 
 public class ControleUnicarioca {
-    public void getAllRegistros() {
+    public void getTodosRegistros() {
         //List<Professor> professores = new ArrayList<>();
 
         try (Connection conexao = Dao.getConnection();) {
