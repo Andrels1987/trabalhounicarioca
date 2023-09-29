@@ -48,7 +48,6 @@ public class ControleAluno {
         boolean existe = true;
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         int continua = 1;
-        PreparedStatement preparedStatement = null;
         Aluno aluno = new Aluno();
         try (Connection conexao = Dao.getConnection();) {
             do {
@@ -72,13 +71,6 @@ public class ControleAluno {
                             System.out.println("");
                         }
                     } while (professor == null);
-
-                    /* System.out.println("Professor : " + professor);
-                    preparedStatement = conexao.prepareStatement("INSERT INTO aluno VALUES(null, ?,?,?)");
-                    preparedStatement.setString(1, aluno.getCurso());
-                    preparedStatement.setString(2, aluno.getNome());
-                    preparedStatement.setInt(3, professor.getId()); */
-                    //boolean r = preparedStatement.execute();
                     boolean r = inserirAlunoNoBanco(aluno, professor);
                     if (!r) {
                         System.out.println("aluno inserido");
@@ -95,7 +87,7 @@ public class ControleAluno {
         } finally {
             if (br != null) {
                 br.close();
-                preparedStatement.close();
+
             }
         }
 
@@ -125,20 +117,18 @@ public class ControleAluno {
             result = preparedStatement.executeQuery();
 
             if (result.next()) {
-                System.out.println("DENTRO DE..1");
                 return true;
             }
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
 
-        System.out.println("DENTRO DE..2");
         return false;
     }
 
-    public Boolean inserirAlunoNoBanco(Aluno aluno, Professor professor){
+    public Boolean inserirAlunoNoBanco(Aluno aluno, Professor professor) {
         boolean resultado = false;
-        try(Connection conexao = Dao.getConnection()){
+        try (Connection conexao = Dao.getConnection()) {
             System.out.println("Professor : " + professor);
             PreparedStatement preparedStatement = conexao.prepareStatement("INSERT INTO aluno VALUES(null, ?,?,?)");
             preparedStatement.setString(1, aluno.getCurso());
@@ -151,4 +141,145 @@ public class ControleAluno {
         return resultado;
     }
 
+    public void deletarAlunoDoBanco() throws IOException {
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        Aluno aluno = new Aluno();
+        List<Aluno> alunos = new ArrayList<>();
+        inserirInfoAluno(br, aluno);
+        PreparedStatement ps = null;
+        try (Connection con = Dao.getConnection()) {
+            String queString = "Select * from aluno where nome LIKE ? and curso LIKE ?";
+            ps = con.prepareStatement(queString);
+            ps.setString(1, '%' + aluno.getNome().trim() + '%');
+            ps.setString(2, '%' + aluno.getCurso().trim() + '%');
+            ResultSet rs = ps.executeQuery();
+            int index = 0;
+            while (rs.next()) {
+                alunos.add(index,
+                        new Aluno(rs.getInt("id_aluno"),
+                                rs.getString("nome"),
+                                rs.getString("curso"),
+                                rs.getInt("professor_id_professor")));
+                index++;
+            }
+            System.out.println();
+            if(alunos.isEmpty()) {
+                System.out.println("Nenhum aluno encontrado");
+                return;
+            }
+            for (Aluno a : alunos) {
+                System.out.printf("%d\t%s\n", a.getId(), a.getNome());
+            }
+            deletarAluno(ps, con, br);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }finally{
+            try {
+                if(ps != null){
+                    ps.close();
+                }
+                if(br != null){
+                    br.close();
+                }
+                
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
+        }
+
+    }
+
+    public void atualizarAlunoDoBanco() throws IOException {
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        Aluno aluno = new Aluno();
+        List<Aluno> alunos = new ArrayList<>();
+        inserirInfoAluno(br, aluno);
+        PreparedStatement ps = null;
+        try (Connection con = Dao.getConnection()) {
+            String queString = "Select * from aluno where nome LIKE ? and curso LIKE ?";
+            ps = con.prepareStatement(queString);
+            ps.setString(1, '%' + aluno.getNome().trim() + '%');
+            ps.setString(2, '%' + aluno.getCurso().trim() + '%');
+            ResultSet rs = ps.executeQuery();
+            int index = 0;
+            while (rs.next()) {
+                alunos.add(index,
+                        new Aluno(rs.getInt("id_aluno"),
+                                rs.getString("nome"),
+                                rs.getString("curso"),
+                                rs.getInt("professor_id_professor")));
+                index++;
+            }
+            System.out.println();
+            if(alunos.isEmpty()) {
+                System.out.println("Nenhum aluno encontrado");
+                return;
+            }
+            for (Aluno a : alunos) {
+                System.out.printf("%d\t%s\n", a.getId(), a.getNome());
+            }
+            atualizarAluno(alunos,ps, con, br);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }finally{
+            try {
+                if(ps != null){
+                    ps.close();
+                }
+                if(br != null){
+                    br.close();
+                }
+                
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
+        }
+
+    }
+    public void deletarAluno(PreparedStatement ps, Connection con, BufferedReader br) throws NumberFormatException, IOException, SQLException{
+        
+            System.out.println("Selecione o ID do aluno a ser deletado - CTRL+C para sair");
+            int escolha = Integer.parseInt(br.readLine());
+            String deleteQuery = "DELETE FROM aluno where id_aluno = ?";
+            ps = con.prepareStatement(deleteQuery);
+            ps.setInt(1, escolha);
+            int resultado = ps.executeUpdate();
+            if(resultado > 0){
+                System.out.println("Aluno deletado");
+            }
+    }
+
+     public void atualizarAluno(List<Aluno> alunos, PreparedStatement ps, Connection con, BufferedReader br) throws NumberFormatException, IOException, SQLException{
+            Aluno aluno = new Aluno();
+            System.out.println("Selecione o ID do aluno a ser atualizado - CTRL+C para sair");
+            int escolha = Integer.parseInt(br.readLine());
+            for(Aluno al : alunos){
+                if(al.getId() == escolha){
+                    aluno = al;
+                }
+            }
+            System.out.println("Digite o nome ou enter para pular");
+            String nomeAluno = br.readLine();
+            System.out.println("Digite o curso ou enter para pular");
+            String curso = br.readLine();
+            if(nomeAluno != ""){
+                aluno.setNome(nomeAluno);
+            }
+        System.out.println("Aluno ; " + aluno);
+            if(curso != ""){
+                aluno.setCurso(curso);
+            }
+            String updateQuery = "UPDATE aluno SET curso = ?, nome = ? WHERE (id_aluno = ?);";
+            ps = con.prepareStatement(updateQuery);
+            ps.setString(1, aluno.getCurso());
+            ps.setString(2, aluno.getNome());
+            ps.setInt(3, escolha);
+            int resultado = ps.executeUpdate();
+            if(resultado > 0){
+                System.out.println("Aluno atualizado: " + aluno);
+            }
+    }
+
 }
+
+

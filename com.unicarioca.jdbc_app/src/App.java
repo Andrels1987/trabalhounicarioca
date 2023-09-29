@@ -5,6 +5,9 @@ public class App {
         
         ControleAluno ca = new ControleAluno();
         //ca.addAlunos(); 
-        ca.getAllAlunos().forEach(System.out::println);
+        //ca.getAllAlunos().forEach(System.out::println);
+        //ca.deletarAlunoDoBanco();
+        ca.atualizarAlunoDoBanco();
+        
     }
 }
