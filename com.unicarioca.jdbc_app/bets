@@ -457,3 +457,23 @@ list.add(new ArrayList<>(17	37	39	51	52	59){{add();add();add();add();add();add()
 list.add(new ArrayList<>(01	09	31	38	46	56){{add();add();add();add();add();add();}});
 list.add(new ArrayList<>(06	33	36	46	49	53){{add();add();add();add();add();add();}});
 list.add(new ArrayList<>(11	25	28	30	33	51){{add();add();add();add();add();add();}});
+//PAGINA 54
+list.add(new ArrayList<>(05	10	12	24	25	60){{add();add();add();add();add();add();}});
+list.add(new ArrayList<>(23	27	36	37	42	56){{add();add();add();add();add();add();}});
+list.add(new ArrayList<>(06	10	13	19	20	51){{add();add();add();add();add();add();}});
+list.add(new ArrayList<>(20	32	34	49	58	60){{add();add();add();add();add();add();}});
+list.add(new ArrayList<>(12	33	35	51	52	60){{add();add();add();add();add();add();}});
+list.add(new ArrayList<>(02	16	23	27	47	53){{add();add();add();add();add();add();}});
+list.add(new ArrayList<>(18	32	47	50	54	56){{add();add();add();add();add();add();}});
+list.add(new ArrayList<>(04	16	19	20	27	43){{add();add();add();add();add();add();}});
+list.add(new ArrayList<>(15	25	37	38	58	59){{add();add();add();add();add();add();}});
+list.add(new ArrayList<>(04	18	21	25	38	57){{add();add();add();add();add();add();}});
+list.add(new ArrayList<>(08	43	54	55	56	60){{add();add();add();add();add();add();}});
+list.add(new ArrayList<>(04	17	37	38	47	53){{add();add();add();add();add();add();}});
+list.add(new ArrayList<>(03	05	20	21	38	56){{add();add();add();add();add();add();}});
+list.add(new ArrayList<>(07	13	19	22	40	47){{add();add();add();add();add();add();}});
+list.add(new ArrayList<>(01	02	06	16	19	46){{add();add();add();add();add();add();}});
+list.add(new ArrayList<>(01	05	06	27	42	59){{add();add();add();add();add();add();}});
+list.add(new ArrayList<>(10	11	29	30	36	47){{add();add();add();add();add();add();}});
+list.add(new ArrayList<>(09	37	39	41	43	49){{add();add();add();add();add();add();}});
+list.add(new ArrayList<>(04	05	30	33	41	52){{add();add();add();add();add();add();}});
